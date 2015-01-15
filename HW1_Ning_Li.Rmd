@@ -1,0 +1,65 @@
+---
+title: "BIOSTAT578_HW1"
+author: "Ning LI"
+date: "Thursday, January 15, 2015"
+output: html_document
+---
+In this homework, we are going to use the ggplot2 package to plot the **Iris** data showing length vs width facetting petal/sepal vs flower type. Basically, there are two steps for this work:  
+1. Reshape the **Iris** data for final plotting;  
+2. Plot reshaped **Iris** data.  
+
+```{r,echo=FALSE,message=FALSE}
+#require libraries for this work
+require(ggplot2)# advanced graphic library
+require(reshape2)# data manipunation library
+```
+
+Let's look at the original **Iris** data. It contains 150 observations with 5 variables. And we find that the width and length of these flowers were measured on two different charachteristics: Sepal and Petal. 
+```{r}
+dim(iris)#look at the dimension of this dataset
+head(iris)#only display the first few lines 
+```
+
+Based on the new **iris_melted** data, we find that the column `variable` contains the information we are interested, and we want to split them into two parts: Sepal/Petal and Length/Width.
+
+```{r }
+# We add a column to keep track of the flower
+iris$flower_id <- rownames(iris)
+# Default options
+iris_melted <- melt(iris)
+head(iris_melted)
+```
+
+Now, we get the melted data we need. 
+```{r }
+# split that variable column to get the columns we need
+split_variable <- strsplit(as.character(iris_melted$variable),split="\\.")
+# Create two new variables type and part
+iris_melted$flower_part <- sapply(split_variable, "[", 1)
+iris_melted$measurement_type <- sapply(split_variable, "[", 2)
+# Remove the one we don't need anymore
+iris_melted$variable <- NULL
+head(iris_melted)
+```
+
+It's much closer to the dataframe which we want. But we still need to do some more work in order to make each obeservation contains both Length and Width. Let's use `dcast` function
+
+```{r reshape2-cast}
+iris_cast <- dcast(iris_melted, formula=flower_id+Species+flower_part~measurement_type)
+head(iris_cast)
+```
+
+Up to now, our dataframe is prepared for making plots!
+```{r ggplot-iris, fig.height=5}
+ggplot(data=iris_cast, aes(x=Width, y=Length,color=Species,shape=flower_part))+ 
+  # Add points and use free scales in the facet
+  geom_point()+facet_grid(Species~flower_part, scale="free")+
+  # Add a regression line
+  geom_smooth(method="lm",size=1)+
+  # Use the black/white theme and increase the font size
+  theme_bw(base_size=20)
+```
+
+The end.  
+
+<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
